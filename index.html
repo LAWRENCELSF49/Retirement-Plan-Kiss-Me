@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Retirement Roadmap Planner</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+:root {
+  --paper:#f7f4ef;--ink:#1a1814;--slate:#3a4a5c;--gold:#c4922a;
+  --safe:#2d6a8f;--growth:#3d7a5f;--warn:#b85c2a;
+  --border:#d4cfc7;--card:#fff;--muted:#7a7468;
+  --opt:#2e7d52;--base:#3a4a5c;--pess:#b85c2a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--paper);color:var(--ink);line-height:1.55;font-size:14px}
+
+/* ── Header ── */
+header{background:var(--slate);color:#fff;padding:.9rem 1.25rem;border-bottom:4px solid var(--gold);display:flex;align-items:center;justify-content:space-between;gap:.75rem}
+header h1{font-family:'Playfair Display',serif;font-size:clamp(1rem,4vw,1.75rem);font-weight:700;line-height:1.1}
+header .sub{font-size:.65rem;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.07em;margin-top:.12rem}
+.badge{font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--gold);border:1px solid var(--gold);padding:.2rem .5rem;white-space:nowrap;flex-shrink:0;border-radius:2px}
+
+/* ── Controls Panel ── */
+.ctrl-toggle{display:none;width:100%;background:#111;color:var(--gold);border:none;padding:.75rem 1.25rem;font-family:'IBM Plex Sans',sans-serif;font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;cursor:pointer;text-align:left;align-items:center;justify-content:space-between}
+.ctrl-toggle .arr{transition:transform .2s;display:inline-block}
+.ctrl-toggle.open .arr{transform:rotate(180deg)}
+.ctrl-panel{background:var(--ink);color:#fff;padding:1.1rem 1.25rem}
+.ctrl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem 1.5rem}
+.cl{font-size:.63rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.12rem}
+.cv{font-family:'IBM Plex Mono',monospace;font-size:1rem;color:#fff;font-weight:500}
+.cv span{font-size:.65rem;color:rgba(255,255,255,.3)}
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin-top:.4rem;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--gold);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--gold);border:none;cursor:pointer}
+input[type=number]{width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;padding:.45rem .6rem;font-family:'IBM Plex Mono',monospace;font-size:.9rem;border-radius:4px;outline:none;margin-top:.28rem;-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+input[type=number]:focus{border-color:var(--gold)}
+.stats-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:.5rem;margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.1)}
+.si .sl{font-size:.6rem;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em}
+.si .sv{font-family:'IBM Plex Mono',monospace;font-size:.92rem;color:var(--gold);font-weight:500}
+
+/* ── Main ── */
+main{padding:1.1rem 1.25rem;max-width:1400px;margin:0 auto}
+section{margin-bottom:2rem}
+.sh{font-family:'Playfair Display',serif;font-size:clamp(.95rem,3vw,1.35rem);font-weight:700;color:var(--slate);margin-bottom:.12rem;display:flex;align-items:center;gap:.7rem}
+.sh::after{content:'';flex:1;height:1px;background:var(--border)}
+.ss{font-size:.72rem;color:var(--muted);margin-bottom:.9rem}
+
+/* ── Hero cards ── */
+.hero-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;margin-bottom:1.2rem}
+.hcard{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.85rem;border-top:3px solid var(--slate)}
+.hcard.safe{border-top-color:var(--safe)}.hcard.growth{border-top-color:var(--growth)}.hcard.gold{border-top-color:var(--gold)}
+.hl{font-size:.6rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:.2rem}
+.hv{font-family:'IBM Plex Mono',monospace;font-size:clamp(.9rem,3vw,1.3rem);font-weight:600;color:var(--ink)}
+.hn{font-size:.62rem;color:var(--muted);margin-top:.08rem}
+
+/* ── Scenarios ── */
+.sc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-bottom:1.2rem}
+.sc{border-radius:8px;padding:.9rem;border:2px solid;position:relative;overflow:hidden}
+.sc::after{content:attr(data-tag);position:absolute;top:.45rem;right:.6rem;font-size:.55rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;opacity:.4}
+.sc.opt{border-color:var(--opt);background:rgba(46,125,82,.06)}
+.sc.base{border-color:var(--base);background:rgba(58,74,92,.06)}
+.sc.pess{border-color:var(--pess);background:rgba(184,92,42,.06)}
+.sc-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.18rem}
+.sc.opt .sc-label{color:var(--opt)}.sc.base .sc-label{color:var(--base)}.sc.pess .sc-label{color:var(--pess)}
+.sc-rate{font-size:.62rem;color:var(--muted);margin-bottom:.5rem}
+.sc-bal{font-family:'IBM Plex Mono',monospace;font-size:clamp(.9rem,2.4vw,1.25rem);font-weight:700;margin-bottom:.12rem}
+.sc.opt .sc-bal{color:var(--opt)}.sc.base .sc-bal{color:var(--base)}.sc.pess .sc-bal{color:var(--pess)}
+.sc-note{font-size:.62rem;color:var(--muted)}
+.sc-pill{display:inline-block;margin-top:.45rem;padding:.1rem .4rem;border-radius:20px;font-size:.57rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.sc.opt .sc-pill{background:rgba(46,125,82,.14);color:var(--opt)}
+.sc.base .sc-pill{background:rgba(58,74,92,.14);color:var(--base)}
+.sc.pess .sc-pill{background:rgba(184,92,42,.14);color:var(--pess)}
+
+/* ── Allocation Section ── */
+.alloc-layout{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;align-items:start}
+.alloc-sliders{display:flex;flex-direction:column;gap:.5rem}
+
+/* safe/growth split slider */
+.split-bar{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;margin-bottom:.75rem}
+.split-bar-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
+.split-label{font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--slate)}
+.split-values{display:flex;gap:.5rem;font-family:'IBM Plex Mono',monospace;font-size:.82rem}
+.sv-safe{color:var(--safe)}.sv-growth{color:var(--growth)}
+.split-track{position:relative;height:6px;background:rgba(61,122,95,.25);border-radius:3px;cursor:pointer}
+.split-track-fill{position:absolute;left:0;top:0;height:100%;background:var(--safe);border-radius:3px;pointer-events:none}
+.split-thumb{position:absolute;top:50%;width:22px;height:22px;border-radius:50%;background:var(--gold);border:2px solid #fff;transform:translate(-50%,-50%);cursor:grab;box-shadow:0 1px 4px rgba(0,0,0,.25);transition:box-shadow .1s;z-index:2}
+.split-thumb:active{cursor:grabbing;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+
+/* asset group */
+.asset-group{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:.5rem}
+.ag-header{padding:.6rem .9rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.ag-header:hover{background:rgba(0,0,0,.025)}
+.ag-title{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.ag-title.safe{color:var(--safe)}.ag-title.growth{color:var(--growth)}
+.ag-meta{font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--muted);display:flex;align-items:center;gap:.5rem}
+.ag-total{font-weight:600}
+.ag-arrow{font-size:.65rem;transition:transform .2s;color:var(--muted)}
+.ag-body{padding:.5rem .9rem .75rem;display:none}
+.ag-body.open{display:block}
+.asset-row{margin-bottom:.55rem}
+.ar-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.18rem}
+.ar-name{font-size:.7rem;color:var(--ink)}
+.ar-ticker{font-family:'IBM Plex Mono',monospace;font-size:.66rem;color:var(--muted)}
+.ar-right{display:flex;align-items:center;gap:.6rem}
+.ar-pct{font-family:'IBM Plex Mono',monospace;font-size:.78rem;font-weight:600;min-width:36px;text-align:right}
+.ar-ret{font-size:.62rem;color:var(--muted);white-space:nowrap}
+input.ar-range{width:100%;height:3px;-webkit-appearance:none;appearance:none;border-radius:2px;outline:none;cursor:pointer;margin-top:.05rem}
+input.ar-range::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;cursor:pointer}
+input.ar-range::-moz-range-thumb{width:16px;height:16px;border-radius:50%;border:none;cursor:pointer}
+.warn-bar{font-size:.62rem;padding:.3rem .7rem;border-radius:4px;margin-top:.3rem;display:none}
+.warn-bar.show{display:block}
+.warn-bar.over{background:rgba(184,92,42,.12);color:var(--pess)}
+.warn-bar.ok{background:rgba(46,125,82,.1);color:var(--opt)}
+
+/* pie canvas */
+#pieChart{display:block;width:100%;height:auto}
+
+/* projection */
+.proj-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:.9rem;overflow:hidden}
+.ptable{width:100%;border-collapse:collapse;font-size:.71rem;display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.ptable thead tr{background:var(--slate);color:#fff}
+.ptable th{padding:.45rem .6rem;font-size:.6rem;font-weight:500;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.ptable tbody tr:nth-child(even){background:rgba(0,0,0,.025)}
+.ptable tbody tr{border-bottom:1px solid var(--border)}
+.ptable td{padding:.4rem .6rem;white-space:nowrap}
+.ptable td:nth-child(n+3){font-family:'IBM Plex Mono',monospace;font-size:.68rem}
+.co{color:var(--opt);font-weight:600}.cb{color:var(--base);font-weight:700}.cp{color:var(--pess)}
+
+/* buckets & rules */
+.buckets{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem}
+.bucket{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.9rem;border-top:4px solid;position:relative}
+.bucket.b1{border-top-color:var(--safe)}.bucket.b2{border-top-color:var(--gold)}.bucket.b3{border-top-color:var(--growth)}
+.bnum{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;color:var(--border);position:absolute;right:.6rem;top:.25rem;line-height:1}
+.bucket h4{font-family:'Playfair Display',serif;font-size:.88rem;color:var(--slate);margin-bottom:.18rem}
+.bt{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.45rem}
+.bucket p{font-size:.7rem;color:var(--muted)}
+.rules{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem}
+.rule{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.85rem;display:flex;gap:.7rem;align-items:flex-start}
+.rnum{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--gold);line-height:1;min-width:24px}
+.rule h5{font-size:.77rem;font-weight:600;color:var(--slate);margin-bottom:.12rem}
+.rule p{font-size:.7rem;color:var(--muted)}
+
+footer{text-align:center;padding:1rem;font-size:.62rem;color:var(--muted);border-top:1px solid var(--border);letter-spacing:.03em}
+
+/* responsive */
+@media(max-width:600px){
+  header{padding:.75rem 1rem}main{padding:.85rem 1rem}
+  .ctrl-toggle{display:flex}.ctrl-panel{display:none}.ctrl-panel.open{display:block}
+  .ctrl-grid{grid-template-columns:1fr}.stats-strip{grid-template-columns:repeat(2,1fr)}
+  .hero-grid{grid-template-columns:repeat(2,1fr);gap:.45rem}.hv{font-size:.9rem}
+  .sc-grid{grid-template-columns:1fr;gap:.5rem}.sc::after{display:none}
+  .alloc-layout{grid-template-columns:1fr}
+  .buckets{grid-template-columns:1fr}.rules{grid-template-columns:1fr}
+}
+@media(min-width:601px) and (max-width:900px){
+  .hero-grid{grid-template-columns:repeat(2,1fr)}
+  .alloc-layout{grid-template-columns:1fr}
+  .buckets{grid-template-columns:1fr}.rules{grid-template-columns:1fr}
+}
+@media(min-width:1200px){
+  .hero-grid{grid-template-columns:repeat(4,1fr)}
+  .sc-grid{grid-template-columns:repeat(3,1fr)}
+  .buckets{grid-template-columns:repeat(3,1fr)}
+  .rules{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Retirement Roadmap Planner</h1>
+    <div class="sub">by LL &nbsp;·&nbsp; Model Fund Portfolio · Interactive Allocation · DIY Edition</div>
+  </div>
+  <div class="badge" id="hdrBadge">50 / 50</div>
+</header>
+
+<button class="ctrl-toggle" id="ctrlBtn" onclick="toggleCtrl()">
+  ⚙ Adjust Your Numbers &nbsp;<span class="arr">▼</span>
+</button>
+
+<div class="ctrl-panel" id="ctrlPanel">
+  <div class="ctrl-grid">
+    <div class="ctrl-group">
+      <div class="cl">Current Age</div>
+      <div class="cv" id="ageVal">65 <span>yrs</span></div>
+      <input type="range" id="ageSlider" min="45" max="80" value="65">
+    </div>
+    <div class="ctrl-group">
+      <div class="cl">Planning Horizon</div>
+      <div class="cv" id="horizonVal">30 <span>yrs</span></div>
+      <input type="range" id="horizonSlider" min="10" max="40" value="30">
+    </div>
+    <div class="ctrl-group">
+      <div class="cl">Portfolio Value ($)</div>
+      <input type="number" id="portfolioInput" value="500000" step="10000" inputmode="numeric">
+    </div>
+    <div class="ctrl-group">
+      <div class="cl">Withdrawal Rate</div>
+      <div class="cv" id="wRateVal">5.0 <span>%/yr</span></div>
+      <input type="range" id="wRateSlider" min="1" max="10" step="0.5" value="5">
+    </div>
+    <div class="ctrl-group">
+      <div class="cl">Inflation Rate</div>
+      <div class="cv" id="inflationVal">2.5 <span>%</span></div>
+      <input type="range" id="inflationSlider" min="1" max="15" step="0.5" value="2.5">
+    </div>
+  </div>
+  <div class="stats-strip">
+    <div class="si"><div class="sl">Weighted Return</div><div class="sv" id="svWR">—</div></div>
+    <div class="si"><div class="sl">Withdrawal Rate</div><div class="sv" id="svWrate">—</div></div>
+    <div class="si"><div class="sl">Monthly Income</div><div class="sv" id="svMonthly">—</div></div>
+    <div class="si"><div class="sl">Safe Bucket Yrs</div><div class="sv" id="svSafeYrs">—</div></div>
+    <div class="si"><div class="sl">Safe / Growth</div><div class="sv" id="svSplit">—</div></div>
+  </div>
+</div>
+
+<main>
+
+<section>
+  <div class="sh">Portfolio Summary</div>
+  <p class="ss">Live metrics — adjust sliders to update all calculations instantly</p>
+  <div class="hero-grid">
+    <div class="hcard safe"><div class="hl">Safe Assets</div><div class="hv" id="hcSafe">$250,000</div><div class="hn" id="hcSafePct">50% · Cash · Bonds · Dividends</div></div>
+    <div class="hcard growth"><div class="hl">Growth Assets</div><div class="hv" id="hcGrowth">$250,000</div><div class="hn" id="hcGrowthPct">50% · Equities · REITs</div></div>
+    <div class="hcard gold"><div class="hl">Monthly Income</div><div class="hv" id="hcMonthly">$2,083</div><div class="hn">From annual withdrawal</div></div>
+    <div class="hcard"><div class="hl">Safe Bucket Years</div><div class="hv" id="hcSafeYrs">—</div><div class="hn" id="hcSafeYrsNote">Net of safe-asset income</div></div>
+  </div>
+</section>
+
+<section>
+  <div class="sh">Three Scenarios at a Glance</div>
+  <p class="ss">End-of-horizon balance · Optimistic (+2%), Baseline, Pessimistic (−2%) · inflation-adjusted BOY withdrawals</p>
+  <div class="sc-grid">
+    <div class="sc opt" data-tag="Bullish">
+      <div class="sc-label">🌿 Optimistic</div>
+      <div class="sc-rate" id="scOptRate">—</div>
+      <div class="sc-bal" id="scOptBal">—</div>
+      <div class="sc-note" id="scOptNote">Markets perform above avg</div>
+      <span class="sc-pill" id="scOptPill">—</span>
+    </div>
+    <div class="sc base" data-tag="Expected">
+      <div class="sc-label">📊 Baseline</div>
+      <div class="sc-rate" id="scBaseRate">—</div>
+      <div class="sc-bal" id="scBaseBal">—</div>
+      <div class="sc-note" id="scBaseNote">Historical avg performance</div>
+      <span class="sc-pill" id="scBasePill">—</span>
+    </div>
+    <div class="sc pess" data-tag="Bear">
+      <div class="sc-label">⚠ Pessimistic</div>
+      <div class="sc-rate" id="scPessRate">—</div>
+      <div class="sc-bal" id="scPessBal">—</div>
+      <div class="sc-note" id="scPessNote">Prolonged downturn</div>
+      <span class="sc-pill" id="scPessPill">—</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sh">Portfolio Allocation</div>
+  <p class="ss">Drag the Safe/Growth split or individual asset sliders — all percentages are locked to 100% automatically</p>
+  <div class="alloc-layout">
+    <div class="alloc-sliders">
+
+      <!-- Safe/Growth master split -->
+      <div class="split-bar">
+        <div class="split-bar-header">
+          <span class="split-label">Safe / Growth Split</span>
+          <span class="split-values">
+            <span class="sv-safe" id="splitSafeLabel">50% Safe</span>
+            <span style="color:var(--muted)">·</span>
+            <span class="sv-growth" id="splitGrowthLabel">50% Growth</span>
+          </span>
+        </div>
+        <div class="split-track" id="splitTrack">
+          <div class="split-track-fill" id="splitFill" style="width:50%"></div>
+          <div class="split-thumb" id="splitThumb" style="left:50%"></div>
+        </div>
+      </div>
+
+      <!-- Safe assets group -->
+      <div class="asset-group" id="grpSafe">
+        <div class="ag-header" onclick="toggleGroup('safe')">
+          <span class="ag-title safe">🔵 Safe Assets</span>
+          <span class="ag-meta">
+            <span class="ag-total" id="safeTotal" style="color:var(--safe)">50%</span>
+            <span id="safeWR" style="font-size:.62rem"></span>
+            <span class="ag-arrow" id="arrowSafe">▼</span>
+          </span>
+        </div>
+        <div class="ag-body open" id="bodySafe"></div>
+      </div>
+
+      <!-- Growth assets group -->
+      <div class="asset-group" id="grpGrowth">
+        <div class="ag-header" onclick="toggleGroup('growth')">
+          <span class="ag-title growth">🟢 Growth Assets</span>
+          <span class="ag-meta">
+            <span class="ag-total" id="growthTotal" style="color:var(--growth)">50%</span>
+            <span id="growthWR" style="font-size:.62rem"></span>
+            <span class="ag-arrow" id="arrowGrowth">▼</span>
+          </span>
+        </div>
+        <div class="ag-body open" id="bodyGrowth"></div>
+      </div>
+
+      <div class="warn-bar" id="warnBar"></div>
+    </div>
+    <canvas id="pieChart"></canvas>
+  </div>
+</section>
+
+<section>
+  <div class="sh">Projection</div>
+  <p class="ss">Portfolio balance over time · inflation-adjusted BOY withdrawals · baseline weighted return</p>
+  <div class="proj-card"><canvas id="projChart"></canvas></div>
+  <table class="ptable">
+    <thead><tr>
+      <th>Year</th><th>Age</th>
+      <th style="color:#a0d4b8">🌿 Optimistic</th>
+      <th style="color:#9aafc8">📊 Baseline</th>
+      <th style="color:#e0a880">⚠ Pessimistic</th>
+    </tr></thead>
+    <tbody id="projBody"></tbody>
+  </table>
+</section>
+
+<section>
+  <div class="sh">Three-Bucket Strategy</div>
+  <p class="ss">Systematic withdrawal approach designed to weather any market cycle</p>
+  <div class="buckets">
+    <div class="bucket b1"><div class="bnum">1</div><h4>Cash Bucket</h4><div class="bt">Years 1–2 · ~10%</div><p>Immediate liquidity. No market risk. Replenished from dividends or bond interest. Target: 1–2 years of withdrawals in VMFXX or money market.</p></div>
+    <div class="bucket b2"><div class="bnum">2</div><h4>Income Bucket</h4><div class="bt">Years 3–10 · ~40%</div><p>Bonds, dividend stocks (BND, NOBL, HDV, VGSH). Generates income to refill Bucket 1. Provides stability and inflation buffer.</p></div>
+    <div class="bucket b3"><div class="bnum">3</div><h4>Growth Bucket</h4><div class="bt">Years 10+ · ~50%</div><p>Long-term equities and REITs (VTI, SCHD, VNQ, QQQ). Grows through full market cycles. Liquidated during strong markets to refill Buckets 1 &amp; 2.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="sh">Golden Rules</div>
+  <div class="rules">
+    <div class="rule"><div class="rnum">4%</div><div><h5>The Withdrawal Rule</h5><p>Withdraw no more than 4% per year. Historically sustains a 30-year retirement with high probability across most market environments.</p></div></div>
+    <div class="rule"><div class="rnum">50</div><div><h5>50/50 Balance</h5><p>Half in safe income-producing assets, half in growth. Rebalance annually. Never let growth drift above 60% or below 40%.</p></div></div>
+    <div class="rule"><div class="rnum">2×</div><div><h5>Cash Reserve</h5><p>Always hold 2 years of living expenses in cash or money market. Prevents forced selling during downturns.</p></div></div>
+    <div class="rule"><div class="rnum">95</div><div><h5>Plan to Age 95</h5><p>Build projections to 95 minimum. Longevity is the most underestimated retirement risk. Sequence risk peaks in years 1–10.</p></div></div>
+  </div>
+</section>
+
+</main>
+<footer>Retirement Roadmap Planner · Educational purposes only — not financial advice</footer>
+
+<script>
+/* ─────────────────────────────────────────────
+   DATA MODEL
+   pct = actual portfolio % (safe + growth = 100)
+   within-group % is derived: asset.pct / groupTotal
+───────────────────────────────────────────── */
+const ASSETS = [
+  {id:'vmfxx', name:'Money Market',    ticker:'VMFXX', group:'safe',   pct:10, ret:4.8, color:'#1a4f73'},
+  {id:'bnd',   name:'Total Bond',      ticker:'BND',   group:'safe',   pct:12, ret:4.2, color:'#2d6a8f'},
+  {id:'vgsh',  name:'Short-Term Bond', ticker:'VGSH',  group:'safe',   pct: 8, ret:4.0, color:'#4a8ab0'},
+  {id:'nobl',  name:'Dividend Growth', ticker:'NOBL',  group:'safe',   pct:10, ret:6.5, color:'#6aaad0'},
+  {id:'hdv',   name:'High Div Yield',  ticker:'HDV',   group:'safe',   pct:10, ret:6.0, color:'#8dc4e0'},
+  {id:'vti',   name:'Total Market',    ticker:'VTI',   group:'growth', pct:20, ret:9.5, color:'#1a4d38'},
+  {id:'schd',  name:'Dividend Equity', ticker:'SCHD',  group:'growth', pct:10, ret:8.5, color:'#3d7a5f'},
+  {id:'vnq',   name:'Real Estate',     ticker:'VNQ',   group:'growth', pct: 8, ret:7.5, color:'#5a9a7a'},
+  {id:'vxus',  name:'Intl Developed',  ticker:'VXUS',  group:'growth', pct: 7, ret:7.0, color:'#7dbf9f'},
+  {id:'qqq',   name:'Nasdaq 100',      ticker:'QQQ',   group:'growth', pct: 5, ret:11.0,color:'#a0d4b8'},
+];
+
+// ── Helpers ──────────────────────────────────
+const $  = id => document.getElementById(id);
+const fmt = n => {
+  if (n <= 0) return '$0';
+  if (n >= 1e6) return '$'+(n/1e6).toFixed(2)+'M';
+  return '$'+Math.round(n).toLocaleString();
+};
+const groupSum = g => ASSETS.filter(a=>a.group===g).reduce((s,a)=>s+a.pct,0);
+const totalPct  = ()=> ASSETS.reduce((s,a)=>s+a.pct,0);
+const wReturnPct= ()=> ASSETS.reduce((s,a)=>s+(a.pct/100)*a.ret,0); // %
+const safeReturnPct = ()=> {
+  const safe = ASSETS.filter(a=>a.group==='safe');
+  const st = safe.reduce((s,a)=>s+a.pct,0);
+  if(st===0) return 0;
+  return safe.reduce((s,a)=>s+(a.pct/st)*a.ret,0); // % within safe group
+};
+
+function getV(){
+  const portfolio = Math.max(1000, +$('portfolioInput').value||500000);
+  const wRate = +$('wRateSlider').value/100;
+  return {
+    age:+$('ageSlider').value,
+    horizon:+$('horizonSlider').value,
+    portfolio, wRate,
+    withdrawal: portfolio*wRate,
+    inflation:+$('inflationSlider').value/100,
+  };
+}
+
+function calcSafeBucketYrs(v){
+  // How many years can the safe bucket sustain withdrawals?
+  // Each year: safe bucket earns its weighted return, then pays the full annual withdrawal.
+  // We simulate year-by-year until balance hits 0 or horizon is reached.
+  const sSplit  = groupSum('safe') / 100;
+  let bal       = v.portfolio * sSplit;
+  const retRate = safeReturnPct() / 100;  // safe-asset weighted return
+  if(bal <= 0) return 0;
+  for(let yr = 1; yr <= 200; yr++){
+    bal = bal * (1 + retRate) - v.withdrawal;  // grow, then withdraw
+    if(bal <= 0) return yr;
+  }
+  return Infinity;
+}
+
+function buildSeries(v){
+  const br = wReturnPct()/100;
+  let b=v.portfolio, o=v.portfolio, p=v.portfolio;
+  return Array.from({length:v.horizon},(_,i)=>{
+    const draw = v.withdrawal*Math.pow(1+v.inflation,i);
+    b = (b-draw)*(1+br);
+    o = (o-draw)*(1+br+0.02);
+    p = (p-draw)*(1+br-0.02);
+    return {yr:i+1,age:v.age+i+1,base:Math.max(0,b),opt:Math.max(0,o),pess:Math.max(0,p)};
+  });
+}
+
+function pillFor(end,start){
+  if(end<=0)   return 'Depleted';
+  const r=end/start;
+  if(r>2)      return 'Major Surplus';
+  if(r>1)      return 'Surplus';
+  if(r>0.5)    return 'Partial Remain';
+  return 'Near Depletion';
+}
+
+/* ─────────────────────────────────────────────
+   SAFE/GROWTH MASTER SPLIT SLIDER
+───────────────────────────────────────────── */
+let splitPct = 50; // safe %
+
+function initSplitSlider(){
+  const track=$('splitTrack'), thumb=$('splitThumb'), fill=$('splitFill');
+  let dragging=false;
+
+  function update(clientX){
+    const rect=track.getBoundingClientRect();
+    let frac=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));
+    // snap to 5% increments
+    frac = Math.round(frac*20)/20;
+    splitPct = Math.round(frac*100);
+    applyGroupSplit();
+  }
+
+  track.addEventListener('mousedown', e=>{dragging=true;update(e.clientX)});
+  track.addEventListener('touchstart', e=>{dragging=true;update(e.touches[0].clientX)},{passive:true});
+  document.addEventListener('mousemove', e=>{if(dragging)update(e.clientX)});
+  document.addEventListener('touchmove', e=>{if(dragging)update(e.touches[0].clientX)},{passive:true});
+  document.addEventListener('mouseup',  ()=>{dragging=false});
+  document.addEventListener('touchend', ()=>{dragging=false});
+}
+
+function applyGroupSplit(){
+  /* Rescale each group's assets so:
+     safe group sums to splitPct
+     growth group sums to (100 - splitPct)
+     Maintain within-group proportions */
+  const oldSafe   = groupSum('safe');
+  const oldGrowth = groupSum('growth');
+  const newSafe   = splitPct;
+  const newGrowth = 100 - splitPct;
+
+  ASSETS.forEach(a=>{
+    if(a.group==='safe'){
+      a.pct = oldSafe>0 ? Math.round(a.pct*(newSafe/oldSafe)*100)/100 : newSafe/ASSETS.filter(x=>x.group==='safe').length;
+    } else {
+      a.pct = oldGrowth>0 ? Math.round(a.pct*(newGrowth/oldGrowth)*100)/100 : newGrowth/ASSETS.filter(x=>x.group==='growth').length;
+    }
+  });
+  // Fix rounding: force exact sums
+  forceGroupSum('safe',   newSafe);
+  forceGroupSum('growth', newGrowth);
+
+  syncAllSliders();
+  renderAll();
+}
+
+function forceGroupSum(group, target){
+  const arr = ASSETS.filter(a=>a.group===group);
+  const cur  = arr.reduce((s,a)=>s+a.pct,0);
+  const diff = target - cur;
+  if(Math.abs(diff)>0.001 && arr.length>0){
+    arr[arr.length-1].pct = Math.max(0, arr[arr.length-1].pct+diff);
+  }
+}
+
+/* ─────────────────────────────────────────────
+   INDIVIDUAL ASSET SLIDERS
+───────────────────────────────────────────── */
+function buildAssetSliders(){
+  ['safe','growth'].forEach(g=>{
+    const body=$('body'+g[0].toUpperCase()+g.slice(1));
+    body.innerHTML='';
+    ASSETS.filter(a=>a.group===g).forEach(a=>{
+      const div=document.createElement('div');
+      div.className='asset-row';
+      div.innerHTML=`
+        <div class="ar-header">
+          <span><span class="ar-name">${a.name}</span> <span class="ar-ticker">${a.ticker}</span></span>
+          <span class="ar-right">
+            <span class="ar-ret">${a.ret}% exp</span>
+            <span class="ar-pct" id="pct_${a.id}" style="color:${a.color}">${a.pct.toFixed(1)}%</span>
+          </span>
+        </div>
+        <input class="ar-range" id="sl_${a.id}" type="range" min="0" max="40" step="0.5" value="${a.pct}"
+          style="background:linear-gradient(to right,${a.color} 0%,${a.color} ${(a.pct/40)*100}%,rgba(0,0,0,.12) ${(a.pct/40)*100}%,rgba(0,0,0,.12) 100%)"
+        >`;
+      body.appendChild(div);
+
+      const sl=$(`sl_${a.id}`);
+      sl.addEventListener('input', ()=>{ onAssetSlide(a.id, +sl.value); });
+      // Style thumb color
+      sl.style.setProperty('--tc', a.color);
+      // Inject per-slider thumb color via dynamic style
+      injectThumbStyle(a.id, a.color);
+    });
+  });
+}
+
+function injectThumbStyle(id, color){
+  const existing=document.getElementById('ts_'+id);
+  if(existing) return;
+  const s=document.createElement('style');
+  s.id='ts_'+id;
+  s.textContent=`
+    #sl_${id}::-webkit-slider-thumb{background:${color}!important}
+    #sl_${id}::-moz-range-thumb{background:${color}!important}`;
+  document.head.appendChild(s);
+}
+
+function onAssetSlide(id, newVal){
+  const a = ASSETS.find(x=>x.id===id);
+  const old = a.pct;
+  const delta = newVal - old;
+  a.pct = newVal;
+
+  /* Distribute the inverse delta proportionally among other assets in the SAME group
+     to keep the group sum constant, then recalculate master split */
+  const siblings = ASSETS.filter(x=>x.group===a.group && x.id!==id && x.pct>0);
+  const sibSum   = siblings.reduce((s,x)=>s+x.pct,0);
+
+  if(delta>0 && siblings.length>0){
+    // need to reduce siblings
+    let remaining = delta;
+    siblings.forEach((x,i)=>{
+      const share = i<siblings.length-1 ? Math.round((x.pct/sibSum)*delta*100)/100 : remaining;
+      x.pct = Math.max(0, x.pct - share);
+      remaining -= (x.pct < x.pct ? 0 : (x.pct-Math.max(0,x.pct-share))); // track
+    });
+    forceGroupSum(a.group, groupSum(a.group)); // clean rounding
+  } else if(delta<0 && siblings.length>0){
+    // need to increase siblings proportionally
+    const absDelta = Math.abs(delta);
+    siblings.forEach((x,i)=>{
+      const share = sibSum>0 ? (x.pct/sibSum)*absDelta : absDelta/siblings.length;
+      x.pct = x.pct + share;
+    });
+    forceGroupSum(a.group, groupSum(a.group));
+  }
+
+  // Update master split to reflect new group sums
+  splitPct = Math.round(groupSum('safe'));
+  syncAllSliders();
+  renderAll();
+}
+
+function syncAllSliders(){
+  const safePct = groupSum('safe');
+  // Update split thumb
+  const frac = safePct/100;
+  $('splitThumb').style.left = (frac*100)+'%';
+  $('splitFill').style.width = (frac*100)+'%';
+  $('splitSafeLabel').textContent   = Math.round(safePct)+'% Safe';
+  $('splitGrowthLabel').textContent = Math.round(100-safePct)+'% Growth';
+  $('hdrBadge').textContent = Math.round(safePct)+' / '+Math.round(100-safePct);
+
+  // Update individual sliders
+  ASSETS.forEach(a=>{
+    const sl=$(`sl_${a.id}`);
+    const pctEl=$(`pct_${a.id}`);
+    if(!sl) return;
+    sl.value = a.pct;
+    const trackPct = Math.min(100,(a.pct/40)*100);
+    sl.style.background=`linear-gradient(to right,${a.color} 0%,${a.color} ${trackPct}%,rgba(0,0,0,.12) ${trackPct}%,rgba(0,0,0,.12) 100%)`;
+    if(pctEl) pctEl.textContent = a.pct.toFixed(1)+'%';
+  });
+
+  // Update group totals
+  const st=groupSum('safe'), gt=groupSum('growth');
+  const safeWR  = ASSETS.filter(a=>a.group==='safe').reduce((s,a)=>s+(a.pct>0?a.ret*(a.pct/st):0),0);
+  const growWR  = ASSETS.filter(a=>a.group==='growth').reduce((s,a)=>s+(a.pct>0?a.ret*(a.pct/gt):0),0);
+  $('safeTotal').textContent  = st.toFixed(1)+'%';
+  $('growthTotal').textContent= gt.toFixed(1)+'%';
+  $('safeWR').textContent     = safeWR>0?`avg ${safeWR.toFixed(1)}% ret`:'';
+  $('growthWR').textContent   = growWR>0?`avg ${growWR.toFixed(1)}% ret`:'';
+
+  // Warn if totals are off
+  const tot=totalPct();
+  const wb=$('warnBar');
+  if(Math.abs(tot-100)>0.5){
+    wb.textContent=`⚠ Total allocation: ${tot.toFixed(1)}% (should be 100%)`;
+    wb.className='warn-bar show over';
+  } else {
+    wb.textContent=`✓ Total allocation: 100% — portfolio fully invested`;
+    wb.className='warn-bar show ok';
+    setTimeout(()=>{ wb.classList.remove('show'); },2000);
+  }
+}
+
+function toggleGroup(g){
+  const cap=g[0].toUpperCase()+g.slice(1);
+  const body=$('body'+cap), arrow=$('arrow'+cap);
+  const isOpen=body.classList.contains('open');
+  body.classList.toggle('open',!isOpen);
+  arrow.textContent=isOpen?'▶':'▼';
+}
+
+/* ─────────────────────────────────────────────
+   PIE CHART
+───────────────────────────────────────────── */
+let pieRaf=null;
+function drawPie(){
+  if(pieRaf) cancelAnimationFrame(pieRaf);
+  pieRaf=requestAnimationFrame(()=>{
+    const canvas=$('pieChart');
+    const dpr=Math.min(window.devicePixelRatio||1,2);
+    const size=canvas.parentElement.clientWidth;
+    canvas.width=size*dpr; canvas.height=size*dpr;
+    canvas.style.width=size+'px'; canvas.style.height=size+'px';
+    const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr);
+    const cx=size/2, cy=size/2, R=size*0.30, IR=R*0.42;
+    const total=totalPct();
+    let angle=-Math.PI/2;
+    const slices=ASSETS.filter(a=>a.pct>0).map(a=>{
+      const sweep=(a.pct/total)*2*Math.PI;
+      const mid=angle+sweep/2;
+      const s={...a, startAngle:angle, sweep, midAngle:mid};
+      angle+=sweep; return s;
+    });
+    slices.forEach(s=>{
+      ctx.beginPath(); ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,R,s.startAngle,s.startAngle+s.sweep); ctx.closePath();
+      ctx.fillStyle=s.color; ctx.fill();
+      ctx.strokeStyle='#f7f4ef'; ctx.lineWidth=1.5; ctx.stroke();
+    });
+    ctx.beginPath(); ctx.arc(cx,cy,IR,0,2*Math.PI);
+    ctx.fillStyle='#f7f4ef'; ctx.fill();
+    // centre label
+    const safePct=groupSum('safe');
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#1a1814';
+    ctx.font=`bold ${size*0.054}px 'Playfair Display',serif`;
+    ctx.fillText(`${Math.round(safePct)} / ${Math.round(100-safePct)}`, cx, cy-size*0.024);
+    ctx.font=`${size*0.031}px 'IBM Plex Sans',sans-serif`;
+    ctx.fillStyle='#7a7468'; ctx.fillText('Safe / Growth', cx, cy+size*0.03);
+    // labels
+    const lR=R+size*0.065, fs=Math.max(8,size*0.026);
+    slices.forEach(s=>{
+      if(s.pct<3) return;
+      const lx=cx+Math.cos(s.midAngle)*lR, ly=cy+Math.sin(s.midAngle)*lR;
+      ctx.beginPath();
+      ctx.moveTo(cx+Math.cos(s.midAngle)*(R+3),cy+Math.sin(s.midAngle)*(R+3));
+      ctx.lineTo(lx,ly); ctx.strokeStyle=s.color; ctx.lineWidth=.8; ctx.stroke();
+      const right=Math.cos(s.midAngle)>0, tx=lx+(right?4:-4);
+      ctx.textAlign=right?'left':'right'; ctx.textBaseline='middle';
+      ctx.font=`bold ${fs}px 'IBM Plex Mono',monospace`; ctx.fillStyle=s.color;
+      ctx.fillText(s.pct.toFixed(0)+'%', tx, ly-fs*.85);
+      ctx.font=`bold ${fs*.86}px 'IBM Plex Sans',sans-serif`; ctx.fillStyle='#1a1814';
+      ctx.fillText(s.ticker, tx, ly+fs*.25);
+    });
+  });
+}
+
+/* ─────────────────────────────────────────────
+   PROJECTION CHART
+───────────────────────────────────────────── */
+let projRaf=null;
+function drawProjChart(series){
+  if(projRaf) cancelAnimationFrame(projRaf);
+  projRaf=requestAnimationFrame(()=>{
+    const canvas=$('projChart');
+    const wrap=canvas.parentElement;
+    const dpr=Math.min(window.devicePixelRatio||1,2);
+    const W=wrap.clientWidth-32, H=Math.max(160,Math.min(280,W*.38));
+    canvas.width=W*dpr; canvas.height=H*dpr;
+    canvas.style.width=W+'px'; canvas.style.height=H+'px';
+    const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr);
+    const PAD={top:14,right:12,bottom:40,left:55};
+    const cW=W-PAD.left-PAD.right, cH=H-PAD.top-PAD.bottom;
+    const allV=series.flatMap(s=>[s.opt,s.base,s.pess]);
+    const maxV=Math.max(...allV,1);
+    const px=yr=>PAD.left+((yr-1)/(series.length-1))*cW;
+    const py=val=>PAD.top+(1-val/maxV)*cH;
+    for(let i=0;i<=4;i++){
+      const y=PAD.top+(i/4)*cH, val=maxV*(1-i/4);
+      ctx.beginPath(); ctx.strokeStyle=i===4?'#c0bab0':'#e8e2d8'; ctx.lineWidth=1;
+      ctx.moveTo(PAD.left,y); ctx.lineTo(PAD.left+cW,y); ctx.stroke();
+      ctx.fillStyle='#7a7468'; ctx.font='8.5px IBM Plex Mono,monospace';
+      ctx.textAlign='right'; ctx.textBaseline='middle';
+      ctx.fillText(fmt(val),PAD.left-4,y);
+    }
+    ctx.fillStyle='#7a7468'; ctx.font='8px IBM Plex Sans,sans-serif'; ctx.textAlign='center';
+    series.forEach((s,i)=>{
+      if((i+1)%5===0||i===0){
+        ctx.fillText('Yr'+s.yr,px(s.yr),PAD.top+cH+11);
+        ctx.beginPath(); ctx.strokeStyle='#c0bab0'; ctx.lineWidth=1;
+        ctx.moveTo(px(s.yr),PAD.top+cH); ctx.lineTo(px(s.yr),PAD.top+cH+4); ctx.stroke();
+      }
+    });
+    // band
+    ctx.beginPath();
+    series.forEach((s,i)=>{ i===0?ctx.moveTo(px(s.yr),py(s.opt)):ctx.lineTo(px(s.yr),py(s.opt)); });
+    series.slice().reverse().forEach(s=>ctx.lineTo(px(s.yr),py(s.pess)));
+    ctx.closePath(); ctx.fillStyle='rgba(58,74,92,.07)'; ctx.fill();
+    const drawLine=(key,color,dash,lw)=>{
+      ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=lw; ctx.setLineDash(dash);
+      series.forEach((s,i)=>{ i===0?ctx.moveTo(px(s.yr),py(s[key])):ctx.lineTo(px(s.yr),py(s[key])); });
+      ctx.stroke(); ctx.setLineDash([]);
+    };
+    drawLine('opt','#2e7d52',[],2.5);
+    drawLine('base','#3a4a5c',[],2.5);
+    drawLine('pess','#b85c2a',[5,3],2);
+    [['opt','#2e7d52'],['base','#3a4a5c'],['pess','#b85c2a']].forEach(([k,c])=>{
+      const last=series[series.length-1];
+      ctx.beginPath(); ctx.arc(px(last.yr),py(last[k]),3.5,0,2*Math.PI);
+      ctx.fillStyle=c; ctx.fill();
+    });
+    const legs=[['🌿 Optimistic','#2e7d52',[]],['📊 Baseline','#3a4a5c',[]],['⚠ Pessimistic','#b85c2a',[5,3]]];
+    let lx=PAD.left;
+    legs.forEach(([label,color,dash])=>{
+      ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=2; ctx.setLineDash(dash);
+      ctx.moveTo(lx,H-9); ctx.lineTo(lx+16,H-9); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle='#1a1814'; ctx.font='9px IBM Plex Sans,sans-serif'; ctx.textAlign='left';
+      ctx.fillText(label,lx+20,H-8);
+      lx+=label.length*5.8+22;
+    });
+  });
+}
+
+/* ─────────────────────────────────────────────
+   MAIN RENDER
+───────────────────────────────────────────── */
+function renderAll(){
+  const v    = getV();
+  const wr   = wReturnPct();
+  const series=buildSeries(v);
+
+  // Controls
+  $('ageVal').innerHTML    = v.age    +' <span>yrs</span>';
+  $('horizonVal').innerHTML= v.horizon+' <span>yrs</span>';
+  $('wRateVal').innerHTML  = $('wRateSlider').value+' <span>%/yr</span>';
+  $('inflationVal').innerHTML=$('inflationSlider').value+' <span>%</span>';
+  $('svWR').textContent    = wr.toFixed(2)+'%';
+  $('svWrate').textContent = (v.wRate*100).toFixed(1)+'%';
+  $('svMonthly').textContent= fmt(v.withdrawal/12);
+  const safeYrs=calcSafeBucketYrs(v);
+  $('svSafeYrs').textContent = safeYrs===Infinity?'∞':safeYrs.toFixed(1)+' yrs';
+  const sp=groupSum('safe');
+  $('svSplit').textContent = Math.round(sp)+'% / '+Math.round(100-sp)+'%';
+
+  // Hero
+  $('hcSafe').textContent   = fmt(v.portfolio*sp/100);
+  $('hcGrowth').textContent = fmt(v.portfolio*(100-sp)/100);
+  $('hcSafePct').textContent= Math.round(sp)+'% · Cash · Bonds · Dividends';
+  $('hcGrowthPct').textContent=Math.round(100-sp)+'% · Equities · REITs';
+  $('hcMonthly').textContent= fmt(v.withdrawal/12);
+  const safeInc = v.portfolio*(sp/100)*(safeReturnPct()/100);
+  if(safeYrs===Infinity){
+    $('hcSafeYrs').textContent='∞';
+    $('hcSafeYrsNote').textContent='Safe bucket sustains full horizon';
+  } else {
+    $('hcSafeYrs').textContent=safeYrs.toFixed(0)+' yrs';
+    $('hcSafeYrsNote').textContent=`Safe earns ${fmt(safeInc)}/yr · draws ${fmt(v.withdrawal)}/yr`;
+  }
+
+  // Scenarios
+  const last=series[series.length-1];
+  $('scOptRate').textContent = `Return: ${(wr+2).toFixed(2)}% (baseline +2%)`;
+  $('scBaseRate').textContent= `Return: ${wr.toFixed(2)}% weighted avg`;
+  $('scPessRate').textContent= `Return: ${(wr-2).toFixed(2)}% (baseline −2%)`;
+  $('scOptBal').textContent  = fmt(last.opt);
+  $('scBaseBal').textContent = fmt(last.base);
+  $('scPessBal').textContent = fmt(last.pess);
+  const note=`After ${v.horizon} yrs · Age ${last.age}`;
+  $('scOptNote').textContent=$('scBaseNote').textContent=$('scPessNote').textContent=note;
+  $('scOptPill').textContent = pillFor(last.opt, v.portfolio);
+  $('scBasePill').textContent= pillFor(last.base,v.portfolio);
+  $('scPessPill').textContent= pillFor(last.pess,v.portfolio);
+
+  // Projection table (every 5 yrs + last)
+  const rows=series.filter((_,i)=>i===0||(i+1)%5===0||i===series.length-1);
+  $('projBody').innerHTML=rows.map(s=>`<tr>
+    <td>Year ${s.yr}</td><td>${s.age}</td>
+    <td class="co">${fmt(s.opt)}</td>
+    <td class="cb">${fmt(s.base)}</td>
+    <td class="cp">${fmt(s.pess)}</td>
+  </tr>`).join('');
+
+  drawPie();
+  drawProjChart(series);
+}
+
+/* ─────────────────────────────────────────────
+   INIT
+───────────────────────────────────────────── */
+function toggleCtrl(){
+  $('ctrlBtn').classList.toggle('open');
+  $('ctrlPanel').classList.toggle('open');
+}
+
+buildAssetSliders();
+initSplitSlider();
+syncAllSliders();
+renderAll();
+
+['ageSlider','horizonSlider','wRateSlider','inflationSlider'].forEach(id=>{
+  $(id).addEventListener('input', renderAll);
+});
+$('portfolioInput').addEventListener('input', renderAll);
+
+let resizeT;
+window.addEventListener('resize',()=>{ clearTimeout(resizeT); resizeT=setTimeout(renderAll,150); });
+</script>
+</body>
+</html>
